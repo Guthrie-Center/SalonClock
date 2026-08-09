@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#f5f8f9">
+<title>Guthrie Salon Student Time Clock</title>
+<style>
+:root{--ink:#183038;--muted:#63767d;--line:#d8e2e5;--paper:#fff;--bg:#f5f8f9;--ok:#19764b;--warn:#a16f00;--bad:#b33a3a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--ink)}
+.shell{min-height:100vh;padding:18px;display:flex;flex-direction:column;align-items:center}.top{width:min(760px,100%);display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:12px}
+.status{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}.dot{width:11px;height:11px;border-radius:50%;background:var(--ok)}.dot.off{background:var(--warn)}.dot.bad{background:var(--bad)}
+.card{width:min(760px,100%);background:var(--paper);border:1px solid var(--line);border-radius:24px;padding:22px}.logo{display:block;width:min(330px,76%);margin:0 auto 4px}.title{text-align:center;font-weight:700;font-size:22px;margin:8px 0 3px}.sub{text-align:center;color:var(--muted);margin-bottom:18px}
+.roomline{display:flex;justify-content:center;gap:8px;align-items:center;color:var(--muted);font-size:14px;margin-bottom:14px}.pill{border:1px solid var(--line);border-radius:999px;padding:5px 10px;background:#f9fbfb;color:var(--ink)}
+.camera{border:1px solid var(--line);border-radius:18px;overflow:hidden;background:#eef3f4;min-height:245px;display:grid;place-items:center;position:relative}.camera #reader{width:100%}.camera-help{position:absolute;inset:auto 20px 18px;text-align:center;background:rgba(255,255,255,.92);padding:8px 10px;border-radius:12px;font-size:14px;color:var(--muted);pointer-events:none}
+.btn{border:0;border-radius:14px;padding:14px 18px;font-weight:700;background:var(--ink);color:white;cursor:pointer}.btn.secondary{background:white;color:var(--ink);border:1px solid var(--line)}.start{display:block;margin:14px auto 0}.or{display:flex;align-items:center;gap:10px;color:var(--muted);margin:20px 0 14px}.or:before,.or:after{content:"";height:1px;background:var(--line);flex:1}
+.entry{display:flex;gap:10px}.entry input{flex:1;min-width:0;border:1px solid var(--line);border-radius:14px;padding:14px 15px;font-size:22px;letter-spacing:.03em}.hint{color:var(--muted);font-size:13px;margin-top:9px;text-align:center}.msg{min-height:24px;text-align:center;margin-top:15px;color:var(--muted)}
+.overlay{position:fixed;inset:0;background:rgba(245,248,249,.98);display:none;place-items:center;padding:24px;z-index:10}.overlay.show{display:grid}.confirm{width:min(600px,100%);text-align:center}.check{width:80px;height:80px;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;background:#e7f5ee;color:var(--ok);font-size:44px}.confirm h2{font-size:34px;margin:0 0 6px}.direction{font-size:40px;font-weight:800;margin:12px 0}.time{font-size:26px;color:var(--muted)}.course{color:var(--muted);font-size:18px}.extra{font-size:16px;color:var(--warn);margin-top:14px}.error .check{background:#faecec;color:var(--bad)}
+.setup{position:fixed;inset:0;background:var(--bg);display:none;place-items:center;padding:20px;z-index:20}.setup.show{display:grid}.setupbox{width:min(520px,100%);background:white;border:1px solid var(--line);border-radius:22px;padding:25px}.setupbox h2{margin-top:0}.setupbox select,.setupbox input{width:100%;border:1px solid var(--line);border-radius:12px;padding:13px;margin:6px 0 16px;font-size:17px}
+.footer{width:min(760px,100%);display:flex;justify-content:space-between;color:var(--muted);font-size:12px;padding:12px 4px}
+@media(max-width:560px){.card{padding:17px}.entry{flex-direction:column}.camera{min-height:210px}.direction{font-size:34px}.confirm h2{font-size:28px}}
+</style>
+</head>
+<body>
+<div class="shell">
+ <div class="top">
+  <div class="status"><span id="dot" class="dot bad"></span><span id="net">Checking connection…</span></div>
+  <button class="btn secondary" id="changeRoom" type="button">Station</button>
+ </div>
+ <main class="card">
+  <img class="logo" src="salon-logo.png" alt="Guthrie Salon Services">
+  <div class="title">STUDENT TIME CLOCK</div>
+  <div class="sub">Personally scan or enter your student ID when entering or leaving.</div>
+  <div class="roomline"><span id="roomPill" class="pill">Room —</span><span id="blockPill" class="pill">Between blocks</span></div>
+  <section class="camera"><div id="reader"></div><div class="camera-help">Hold the barcode steady inside the camera view.</div></section>
+  <button id="cameraBtn" class="btn start" type="button">Start Camera</button>
+  <div class="or">or enter student ID</div>
+  <div class="entry"><input id="studentId" inputmode="numeric" autocomplete="off" placeholder="Student ID" aria-label="Student ID"><button id="submitId" class="btn" type="button">Submit</button></div>
+  <div class="hint">This same field also accepts a dedicated barcode scanner later.</div>
+  <div id="msg" class="msg" aria-live="polite">Ready to scan</div>
+ </main>
+ <div class="footer"><span>Guthrie Salon Services</span><span>2026–27</span></div>
+</div>
+<div id="overlay" class="overlay"><div id="confirm" class="confirm"><div class="check">✓</div><h2 id="name"></h2><div id="course" class="course"></div><div id="direction" class="direction"></div><div id="clockTime" class="time"></div><div id="extra" class="extra"></div></div></div>
+<div id="setup" class="setup"><div class="setupbox"><h2>Set up this iPad</h2><label for="roomSelect">Room</label><select id="roomSelect"><option value="H105">H105 — Yolanda Matthews-Porter</option><option value="H106">H106 — Emelin Salazar</option><option value="H109">H109 — Grant Yip Choy</option></select><label for="deviceName">Device name</label><input id="deviceName" placeholder="Example: H105 iPad"><button id="saveSetup" class="btn" type="button">Save Station</button></div></div>
+<script src="config.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+const $=id=>document.getElementById(id),CFG=window.GUTHRIE_CLOCK_CONFIG||{};
+let busy=false,scanner=null,lastScan="";
+const deviceId=localStorage.deviceId||(localStorage.deviceId=(crypto.randomUUID?crypto.randomUUID():"dev-"+Date.now()));
+function room(){return localStorage.room||""}
+function setStation(){$("roomPill").textContent="Room "+(room()||"—")}
+function showSetup(){$("setup").classList.add("show");$("roomSelect").value=room()||"H105";$("deviceName").value=localStorage.deviceName||""}
+$("saveSetup").addEventListener("click",()=>{localStorage.room=$("roomSelect").value;localStorage.deviceName=$("deviceName").value.trim();$("setup").classList.remove("show");setStation()});
+$("changeRoom").addEventListener("click",showSetup);if(!room())showSetup();setStation();
+
+function schoolBlock(){
+ const p=new Intl.DateTimeFormat("en-US",{timeZone:CFG.SCHOOL_TIME_ZONE||"America/Chicago",hour:"2-digit",minute:"2-digit",hour12:false}).formatToParts(new Date());
+ const hm=p.find(x=>x.type==="hour").value+":"+p.find(x=>x.type==="minute").value;
+ const b={A:["07:45","09:18"],B:["09:40","11:13"],C:["11:20","12:53"],D:["13:29","15:02"]};
+ for(const [k,v] of Object.entries(b))if(v[0]<=hm&&hm<=v[1])return k;return "";
+}
+function setStatus(k,t){$("dot").className="dot"+(k==="off"?" off":k==="bad"?" bad":"");$("net").textContent=t;$("blockPill").textContent=schoolBlock()?"Block "+schoolBlock():"Between blocks"}
+function apiUrl(params){const u=new URL(CFG.API_URL);Object.entries(params||{}).forEach(([k,v])=>u.searchParams.set(k,v));return u.toString()}
+async function heartbeat(){
+ if(!CFG.API_URL||CFG.API_URL.includes("PASTE_")){setStatus("bad","Setup needed — Apps Script URL missing");return}
+ if(!navigator.onLine){setStatus("off","Offline — punches queue on this iPad");return}
+ try{const r=await fetch(apiUrl({action:"status",t:Date.now()}),{cache:"no-store"}),j=await r.json();if(!j.ok)throw Error();setStatus("ok","Online — punches saved");flushQueue()}
+ catch(e){setStatus("bad","Record server unreachable — punches queue on this iPad")}
+}
+setInterval(heartbeat,7000);heartbeat();
+function queue(){try{return JSON.parse(localStorage.pendingPunches||"[]")}catch{return[]}}
+function saveQueue(q){localStorage.pendingPunches=JSON.stringify(q)}
+async function sendEvent(event){const r=await fetch(CFG.API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(event)});return await r.json()}
+async function flushQueue(){const q=queue();if(!q.length||!navigator.onLine)return;const remain=[];for(const item of q){try{const j=await sendEvent(item);if(!j.ok)remain.push(item)}catch{remain.push(item)}}saveQueue(remain)}
+function makeEvent(id,method){return{action:"punch",eventId:(crypto.randomUUID?crypto.randomUUID():"evt-"+Date.now()+"-"+Math.random()),studentId:id,eventTime:new Date().toISOString(),room:room(),inputMethod:method,deviceId:deviceId,deviceName:localStorage.deviceName||room(),offline:false}}
+function fmtTime(s){return new Intl.DateTimeFormat("en-US",{timeZone:CFG.SCHOOL_TIME_ZONE||"America/Chicago",hour:"numeric",minute:"2-digit"}).format(new Date(s))}
+function showResult(j){const s=j.student||{},o=$("overlay"),c=$("confirm");c.classList.remove("error");c.querySelector(".check").textContent="✓";$("name").textContent=(s.firstName||"Student")+" "+(s.lastName||"");$("course").textContent=(s.course||"")+(s.block?" • Block "+s.block:"");$("direction").textContent="CLOCKED "+j.direction;$("clockTime").textContent=fmtTime(j.timestamp);$("extra").textContent=j.suppressed?"Duplicate scan ignored — previous punch kept.":"";o.classList.add("show");setTimeout(()=>{o.classList.remove("show");busy=false;$("studentId").value="";$("studentId").focus()},2600)}
+function showError(text){const o=$("overlay"),c=$("confirm");c.classList.add("error");c.querySelector(".check").textContent="!";$("name").textContent=text;$("course").textContent="";$("direction").textContent="NOT RECORDED";$("clockTime").textContent="Please try again";$("extra").textContent="";o.classList.add("show");setTimeout(()=>{o.classList.remove("show");c.querySelector(".check").textContent="✓";busy=false;$("studentId").value="";$("studentId").focus()},2600)}
+function showOffline(id){const o=$("overlay"),c=$("confirm");c.classList.remove("error");c.querySelector(".check").textContent="✓";$("name").textContent="Student ID "+id;$("course").textContent="Connection unavailable";$("direction").textContent="PUNCH SAVED OFFLINE";$("clockTime").textContent=fmtTime(new Date().toISOString());$("extra").textContent="It will sync automatically. The ID will be validated when the connection returns.";o.classList.add("show");setTimeout(()=>{o.classList.remove("show");busy=false;$("studentId").value="";$("studentId").focus()},2600)}
+async function punch(raw,method){let id=String(raw||"").replace(/\D/g,"");if(!id||busy)return;if(id===lastScan)return;lastScan=id;setTimeout(()=>{if(lastScan===id)lastScan=""},3000);busy=true;const event=makeEvent(id,method);try{const j=await sendEvent(event);if(!j.ok){showError(j.error||"Punch not recorded");return}showResult(j);setStatus("ok","Online — punches saved")}catch(e){event.offline=true;const q=queue();q.push(event);saveQueue(q);showOffline(id);setStatus("bad","Record server unreachable — punch queued")}}
+$("submitId").addEventListener("click",()=>punch($("studentId").value,"MANUAL_ID"));
+$("studentId").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();punch($("studentId").value,"KEYBOARD_OR_SCANNER")}});
+async function startCamera(){if(scanner)return;if(typeof Html5Qrcode==="undefined"){$("msg").textContent="Camera scanner library unavailable. Manual ID entry still works.";return}try{scanner=new Html5Qrcode("reader",{verbose:false,experimentalFeatures:{useBarCodeDetectorIfSupported:false}});const cams=await Html5Qrcode.getCameras(),cam=cams.find(c=>/back|rear|environment/i.test(c.label))||cams[cams.length-1];if(!cam)throw Error("No camera");await scanner.start(cam.id,{fps:12,qrbox:{width:320,height:130},aspectRatio:1.7,formatsToSupport:[Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,Html5QrcodeSupportedFormats.CODE_93,Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,Html5QrcodeSupportedFormats.ITF]},decoded=>punch(decoded,"CAMERA_SCAN"),()=>{});$("cameraBtn").style.display="none";$("msg").textContent="Camera ready"}catch(e){console.error(e);$("msg").textContent="Camera could not start. Check Safari camera permission.";scanner=null}}
+$("cameraBtn").addEventListener("click",startCamera);
+</script>
+</body>
+</html>
